@@ -30,6 +30,12 @@ int main() {
     book.printBook();
 
 
+    // testing delete order method
+    book.deleteOrder(3);  // delete one of your orders
+    std::cout << "\nAfter deleting order 3:\n\n";
+    book.printBook();
+
+
     return 0;
 }
 
