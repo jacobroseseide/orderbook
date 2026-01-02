@@ -5,16 +5,16 @@ int main() {
     OrderBook book;
 
     // creates buy orders to add to the order book
-    Order o1 {1, Side::buy, OrderType::limit, 10.50, 200};
-    Order o2 {2, Side::buy, OrderType::limit, 11.01, 110};
-    Order o3 {3, Side::buy, OrderType::limit, 10.75, 300};
-    Order o4 {4, Side::buy, OrderType::limit, 10.50, 100};
+    Order o1 {1, Side::buy, OrderType::limit, 0.98, 200};
+    Order o2 {2, Side::buy, OrderType::limit, 0.91, 110};
+    Order o3 {3, Side::buy, OrderType::limit, 0.77, 300};
+    Order o4 {4, Side::buy, OrderType::limit, 0.92, 100};
 
     // creates sell orders to add to the order book
-    Order o5 {5, Side::sell, OrderType::limit, 11.00, 250};
-    Order o6 {6, Side::sell, OrderType::limit, 10.90, 175};
-    Order o7 {7, Side::sell, OrderType::limit, 11.25, 400};
-    Order o8 {8, Side::sell, OrderType::limit, 10.95, 200};
+    Order o5 {5, Side::sell, OrderType::limit, 1.03, 250};
+    Order o6 {6, Side::sell, OrderType::limit, 1.19, 175};
+    Order o7 {7, Side::sell, OrderType::limit, 1.01, 400};
+    Order o8 {8, Side::sell, OrderType::limit, 1.07, 200};
 
     // adds to buy or sell book depending on Side
     book.addOrder(o1);
@@ -28,6 +28,7 @@ int main() {
 
 
     book.printBook();
+
 
     return 0;
 }
