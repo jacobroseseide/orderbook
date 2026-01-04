@@ -36,7 +36,14 @@ int main() {
     book.printBook();
 
 
+
+    // testing modify order method
+    book.modifyOrder(4, 70);
+    std::cout << "\nAfter changing order 4 to 70 shares:\n\n";
+    book.printBook();
+
     return 0;
+    
 }
 
 
