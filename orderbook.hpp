@@ -12,26 +12,10 @@ class OrderBook
 private:
     using PriceLevelVec = std::vector<PriceLevel>;
 
-
     PriceLevelVec buy_orders;
     PriceLevelVec sell_orders;
 
 public:
-
-
-// void addOrder(Order o):
-//     1. Pick the right vector (buy_orders or sell_orders based on o.side)
-//     2. Loop through the price levels
-//     3. If you find a level where getPrice() == o.price:
-//          - Add the order to that level
-//          - Return
-//     4. If no matching level found:
-//          - Create a new PriceLevel with that price
-//          - Add the order to the new level
-//          - Push the new level to the vector
-
-
-
 
     void addOrder(Order o) {
 
@@ -68,30 +52,31 @@ public:
     void printBook() {
 
         // sort buy_orders vector from greatest to least (descending)
-        std::sort(buy_orders.begin(), buy_orders.end(), [](const Order &a, const Order &b)
-                  { return a.price > b.price; });
+        std::sort(buy_orders.begin(), buy_orders.end(), [](const PriceLevel &a, const PriceLevel &b)
+                  { return a.getPrice() > b.getPrice(); });
 
         std::cout << "BUY ORDER BOOK:\n";
 
         // then print out the sorted buy orders
-        for (const Order &o : buy_orders) {
-            std::cout << "BUY " << o.quantity << " at " << o.price << std::endl;
+        for (const PriceLevel &p : buy_orders) {
+            std::cout << p.getPrice() << ": " << p.getTotalQuantity() << std::endl;
         }
 
         std::cout << "--------------------------\n";
 
         // sort sell_orders vector from least to greatest (ascending)
-        std::sort(sell_orders.begin(), sell_orders.end(), [](const Order &a, const Order &b) { 
-            return a.price < b.price; 
-        });
+        std::sort(sell_orders.begin(), sell_orders.end(), [](const PriceLevel &a, const PriceLevel &b)
+            { return a.getPrice() < b.getPrice(); });
 
         std::cout << "SELL ORDER BOOK:\n";
 
         // then print out the sorted sell orders
-        for (const Order &o : sell_orders) {
-            std::cout << "SELL " << o.quantity << " at " << o.price << std::endl;
+        for (const PriceLevel &p : sell_orders) {
+            std::cout << p.getPrice() << ": " << p.getTotalQuantity() << std::endl;
         }
     }
+
+
 
     // given an order ID, we need to:
     // 1. find the order with the unique id

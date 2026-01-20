@@ -20,15 +20,15 @@ public:
         price = p;
     }
 
-    double getPrice() { // price getter
+    double getPrice() const { // price getter
         return price;
     }
-    bool isEmpty() { // returns true if empty
+    bool isEmpty() const { // returns true if empty
         return orders.empty(); 
     }
 
     // get total number of shares at price level
-    uint32_t getTotalQuantity() {
+    uint32_t getTotalQuantity() const {
         // loop through orders vector
         // create int variable to track total
         // each iteration add orders[i].quantity to total
