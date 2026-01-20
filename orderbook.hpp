@@ -3,23 +3,66 @@
 #include <iostream>
 #include "order.hpp"
 #include <algorithm>
+#include "priceLevels.hpp"
 
 // Private vector for buy orders, vector for sell orders
 
 class OrderBook
 {
 private:
-    std::vector<Order> buy_orders;
-    std::vector<Order> sell_orders;
+    using PriceLevelVec = std::vector<PriceLevel>;
+
+
+    PriceLevelVec buy_orders;
+    PriceLevelVec sell_orders;
 
 public:
+
+
+// void addOrder(Order o):
+//     1. Pick the right vector (buy_orders or sell_orders based on o.side)
+//     2. Loop through the price levels
+//     3. If you find a level where getPrice() == o.price:
+//          - Add the order to that level
+//          - Return
+//     4. If no matching level found:
+//          - Create a new PriceLevel with that price
+//          - Add the order to the new level
+//          - Push the new level to the vector
+
+
+
+
     void addOrder(Order o) {
+
+        // for adding to buy order side
         if (o.side == Side::buy) {
-            buy_orders.push_back(o);
+            for (PriceLevel &p : buy_orders) {
+                if (p.getPrice() == o.price) {
+                    p.addOrder(o);
+                    return;
+                }
+            }
+        // If we get here, no matching price level was found
+        PriceLevel newLevel(o.price); // create new price level
+        newLevel.addOrder(o); // add the order to that specific price level
+        buy_orders.push_back(newLevel); // add new price level to buy_orders pricelevel vector
+        
+        } else { // must be sell order
+
+            // TO DO: Make this more consice, create addOrderList method, then use ? for addOrder method
+            for (PriceLevel &p : sell_orders) {
+                if (p.getPrice() == o.price) {
+                    p.addOrder(o);
+                    return;
+                }
+            }
+            PriceLevel newLevel(o.price);
+            newLevel.addOrder(o);
+            sell_orders.push_back(newLevel);
+
         }
-        else {
-            sell_orders.push_back(o);
-        }
+
     }
 
     void printBook() {
@@ -77,55 +120,44 @@ public:
         return false; // return false if given id is not in either buy or sell order vectors
     }
 
-    // function to change number of shares in specific order
-    // ONLY ALLOWED TO REQUEST LESS SHARES THAN IN INITIAL ORDER, CANNOT ADD SHARES
-    bool modifyOrder(uint64_t id, uint32_t new_quantity){
 
-        // edge case if new quantity user wants is 0 (same as deleting order)
+    bool modifyOrderList(uint64_t id, uint32_t new_quantity, PriceLevelVec &v) {
+         // edge case if new quantity user wants is 0 (same as deleting order)
         if (new_quantity == 0){
             deleteOrder(id);
             std::cout << "successfully deleted, user requested new quantity be 0 shares\n";
             return true;
         }
 
+
         // check buy order book for specific id
-        for (size_t i = 0; i < buy_orders.size(); i++) {
+        for (size_t i = 0; i < v.size(); i++) {
 
-            if (buy_orders[i].id == id) { // first: find the right order
+            if (v[i].id == id) { // first: find the right order
 
-                if (new_quantity > buy_orders[i].quantity) { // then: validate
+                if (new_quantity > v[i].quantity) { // then: validate
                     return false; // can't add shares
                 }
 
-                if (new_quantity == buy_orders[i].quantity) {
-                    std::cout << "user requested to modify shares to amount they previously had, nothing changed\n";
-                    return true;
-                }
-                
-                buy_orders[i].quantity = new_quantity; // finally: modify
-                return true;
-            }
-        }
-
-        // check sell order book for specific id
-        for (size_t i = 0; i < sell_orders.size(); i++) {
-
-            if (sell_orders[i].id == id) { // first: find the right order
-
-                if (new_quantity > sell_orders[i].quantity) { // then: validate
-                    return false; // can't add shares
-                }
-
-                if (new_quantity == sell_orders[i].quantity) {
+                if (new_quantity == v[i].quantity) {
                     std::cout << "user requested to modify shares to amount they previously had, nothing changed\n";
                     return true;
                 }
 
-                sell_orders[i].quantity = new_quantity; // finally: modify
+                v[i].quantity = new_quantity; // finally: modify
                 return true;
             }
         }
-
         return false;
+
     }
+
+
+    // function to change number of shares in specific order
+    // ONLY ALLOWED TO REQUEST LESS SHARES THAN IN INITIAL ORDER, CANNOT ADD SHARES
+    bool modifyOrder(uint64_t id, uint32_t new_quantity, bool isBuy){
+        return isBuy ? modifyOrderList(id, new_quantity, buy_orders) : modifyOrderList(id, new_quantity, sell_orders);
+    }
+
 };
+
