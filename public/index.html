@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RECAP Stock Exchange</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0d0f14;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: #141820;
+      border-bottom: 1px solid #2d3345;
+    }
+    header h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #7dd3fc;
+      text-transform: uppercase;
+    }
+    #ticker {
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+    #ticker span { color: #e2e8f0; font-weight: 700; }
+
+    /* ── portfolio bar ── */
+    #portfolio-bar {
+      display: flex;
+      gap: 32px;
+      padding: 10px 24px;
+      background: #181e2a;
+      border-bottom: 1px solid #2d3345;
+      font-size: 0.82rem;
+    }
+    .stat-label { color: #64748b; margin-right: 6px; }
+    .stat-val   { font-weight: 700; }
+    #pnl-val.positive { color: #4ade80; }
+    #pnl-val.negative { color: #f87171; }
+
+    /* ── main grid ── */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      grid-template-rows: auto 1fr;
+      gap: 0;
+      height: calc(100vh - 95px);
+    }
+
+    /* ── order book ── */
+    #book-panel {
+      grid-row: 1 / 3;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #2d3345;
+      overflow: hidden;
+    }
+    #book-panel h2 {
+      padding: 12px 20px;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+      border-bottom: 1px solid #2d3345;
+    }
+    .book-col-headers {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      padding: 6px 20px;
+      font-size: 0.7rem;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid #1e2535;
+    }
+    .book-col-headers span:last-child { text-align: right; }
+    .book-col-headers span:nth-child(2) { text-align: right; }
+
+    #asks-container, #bids-container {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #2d3345 transparent;
+    }
+    #asks-container { display: flex; flex-direction: column-reverse; }
+
+    .book-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      padding: 4px 20px;
+      font-size: 0.82rem;
+      position: relative;
+      cursor: default;
+      transition: background 0.1s;
+    }
+    .book-row:hover { background: #1a2030; }
+
+    .book-row .bar {
+      position: absolute;
+      top: 0; bottom: 0; right: 0;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    .ask-row .price  { color: #f87171; }
+    .ask-row .bar    { background: #f87171; }
+    .bid-row .price  { color: #4ade80; }
+    .bid-row .bar    { background: #4ade80; }
+
+    .book-row .qty   { text-align: right; color: #94a3b8; }
+    .book-row .total { text-align: right; color: #64748b; }
+
+    #spread-row {
+      text-align: center;
+      padding: 5px;
+      font-size: 0.72rem;
+      color: #475569;
+      border-top: 1px solid #1e2535;
+      border-bottom: 1px solid #1e2535;
+      background: #141820;
+    }
+
+    /* ── right panel ── */
+    #order-panel {
+      padding: 20px;
+      border-bottom: 1px solid #2d3345;
+    }
+    #order-panel h2 {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .side-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .side-btn {
+      flex: 1;
+      padding: 8px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      border: 1px solid #2d3345;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #141820;
+      color: #64748b;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+    .side-btn.active-buy  { background: #14532d; color: #4ade80; border-color: #4ade80; }
+    .side-btn.active-sell { background: #450a0a; color: #f87171; border-color: #f87171; }
+
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: 5px;
+    }
+    .field input {
+      width: 100%;
+      padding: 8px 10px;
+      background: #1a2030;
+      border: 1px solid #2d3345;
+      border-radius: 4px;
+      color: #e2e8f0;
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: #7dd3fc; }
+
+    #cost-preview {
+      font-size: 0.75rem;
+      color: #475569;
+      margin-bottom: 14px;
+      min-height: 18px;
+    }
+
+    #submit-btn {
+      width: 100%;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #submit-btn:hover { opacity: 0.85; }
+    #submit-btn.buy  { background: #16a34a; color: #fff; }
+    #submit-btn.sell { background: #dc2626; color: #fff; }
+
+    #order-msg {
+      margin-top: 10px;
+      font-size: 0.75rem;
+      min-height: 18px;
+      text-align: center;
+    }
+    #order-msg.ok  { color: #4ade80; }
+    #order-msg.err { color: #f87171; }
+
+    /* ── trade history ── */
+    #history-panel {
+      padding: 20px;
+      overflow-y: auto;
+    }
+    #history-panel h2 {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+    .trade-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      font-size: 0.78rem;
+      border-bottom: 1px solid #1a2030;
+    }
+    .trade-row .t-side { font-weight: 700; width: 36px; }
+    .trade-row .t-side.buy  { color: #4ade80; }
+    .trade-row .t-side.sell { color: #f87171; }
+    .trade-row .t-detail { color: #94a3b8; }
+    .trade-row .t-time   { color: #475569; }
+    #no-trades { font-size: 0.78rem; color: #475569; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>RECAP Stock Exchange</h1>
+  <div id="ticker">RECAP &nbsp; <span id="last-price">—</span></div>
+</header>
+
+<div id="portfolio-bar">
+  <div><span class="stat-label">Cash</span><span class="stat-val" id="cash-val">$10,000.00</span></div>
+  <div><span class="stat-label">Shares</span><span class="stat-val" id="shares-val">0</span></div>
+  <div><span class="stat-label">Unrealised P&amp;L</span><span class="stat-val" id="pnl-val">$0.00</span></div>
+</div>
+
+<main>
+  <!-- ORDER BOOK -->
+  <div id="book-panel">
+    <h2>Order Book — RECAP</h2>
+    <div class="book-col-headers">
+      <span>Price</span><span style="text-align:right">Qty</span><span style="text-align:right">Total</span>
+    </div>
+    <div id="asks-container"></div>
+    <div id="spread-row">spread: —</div>
+    <div id="bids-container"></div>
+  </div>
+
+  <!-- PLACE ORDER -->
+  <div id="order-panel">
+    <h2>Place Order</h2>
+
+    <div class="side-toggle">
+      <button class="side-btn active-buy" id="btn-buy"  onclick="setSide('buy')">Buy</button>
+      <button class="side-btn"            id="btn-sell" onclick="setSide('sell')">Sell</button>
+    </div>
+
+    <div class="field">
+      <label>Price ($)</label>
+      <input type="number" id="inp-price" step="0.25" min="0.01" placeholder="100.00"
+             oninput="updatePreview()" />
+    </div>
+    <div class="field">
+      <label>Quantity (shares)</label>
+      <input type="number" id="inp-qty" step="1" min="1" placeholder="100"
+             oninput="updatePreview()" />
+    </div>
+
+    <div id="cost-preview"></div>
+
+    <button id="submit-btn" class="buy" onclick="placeOrder()">Place Buy Order</button>
+    <div id="order-msg"></div>
+  </div>
+
+  <!-- TRADE HISTORY -->
+  <div id="history-panel">
+    <h2>Trade History</h2>
+    <div id="no-trades">No trades yet.</div>
+    <div id="trades-list"></div>
+  </div>
+</main>
+
+<script>
+  let currentSide = 'buy';
+
+  // ── side toggle ──────────────────────────────────────────────────────────────
+  function setSide(side) {
+    currentSide = side;
+    document.getElementById('btn-buy').className  = 'side-btn' + (side === 'buy'  ? ' active-buy'  : '');
+    document.getElementById('btn-sell').className = 'side-btn' + (side === 'sell' ? ' active-sell' : '');
+    const btn = document.getElementById('submit-btn');
+    btn.className = 'submit-btn ' + side; // reset
+    btn.className = side; // apply buy/sell style
+    btn.id = 'submit-btn'; // keep id
+    btn.textContent = side === 'buy' ? 'Place Buy Order' : 'Place Sell Order';
+    updatePreview();
+  }
+
+  // ── cost preview ─────────────────────────────────────────────────────────────
+  function updatePreview() {
+    const price = parseFloat(document.getElementById('inp-price').value);
+    const qty   = parseInt(document.getElementById('inp-qty').value);
+    const el    = document.getElementById('cost-preview');
+    if (price > 0 && qty > 0) {
+      const total = (price * qty).toFixed(2);
+      el.textContent = currentSide === 'buy'
+        ? `Estimated cost: $${total}`
+        : `Estimated proceeds: $${total}`;
+    } else {
+      el.textContent = '';
+    }
+  }
+
+  // ── place order ──────────────────────────────────────────────────────────────
+  async function placeOrder() {
+    const price = parseFloat(document.getElementById('inp-price').value);
+    const qty   = parseInt(document.getElementById('inp-qty').value);
+    const msg   = document.getElementById('order-msg');
+
+    if (!price || !qty || price <= 0 || qty <= 0) {
+      showMsg('Enter a valid price and quantity.', 'err');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ side: currentSide, price, qty })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg(data.error || 'Order rejected.', 'err');
+        return;
+      }
+
+      if (data.status === 'fully_filled') {
+        showMsg(`Filled ${data.filled_qty} shares @ $${data.avg_price.toFixed(2)}`, 'ok');
+      } else if (data.status === 'partially_filled') {
+        showMsg(`Partial fill: ${data.filled_qty} shares @ $${data.avg_price.toFixed(2)} — remainder resting`, 'ok');
+      } else {
+        showMsg(`Order resting in book (no match at $${price.toFixed(2)})`, 'ok');
+      }
+
+      refreshPortfolio();
+      refreshBook();
+    } catch (e) {
+      showMsg('Network error.', 'err');
+    }
+  }
+
+  function showMsg(text, cls) {
+    const el = document.getElementById('order-msg');
+    el.textContent = text;
+    el.className = cls;
+    setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
+  }
+
+  // ── book rendering ───────────────────────────────────────────────────────────
+  async function refreshBook() {
+    try {
+      const res  = await fetch('/api/book');
+      const data = await res.json();
+      renderBook(data.bids, data.asks);
+    } catch (_) {}
+  }
+
+  function renderBook(bids, asks) {
+    const asksEl = document.getElementById('asks-container');
+    const bidsEl = document.getElementById('bids-container');
+    const spreadEl = document.getElementById('spread-row');
+
+    // max qty across both sides for bar sizing
+    const maxQty = Math.max(
+      ...bids.map(b => b.qty), ...asks.map(a => a.qty), 1
+    );
+
+    asksEl.innerHTML = asks.map(a => bookRow(a, 'ask', maxQty)).join('');
+    bidsEl.innerHTML = bids.map(b => bookRow(b, 'bid', maxQty)).join('');
+
+    // spread
+    if (bids.length && asks.length) {
+      const spread = (asks[0].price - bids[0].price).toFixed(2);
+      const mid    = ((asks[0].price + bids[0].price) / 2).toFixed(2);
+      spreadEl.textContent = `spread: $${spread}  ·  mid: $${mid}`;
+      document.getElementById('last-price').textContent = `$${mid}`;
+    }
+  }
+
+  function bookRow({ price, qty }, type, maxQty) {
+    const barPct = Math.round((qty / maxQty) * 100);
+    const total  = (price * qty).toFixed(0);
+    const cls    = type === 'ask' ? 'ask-row' : 'bid-row';
+    return `
+      <div class="book-row ${cls}">
+        <span class="price">$${price.toFixed(2)}</span>
+        <span class="qty">${qty.toLocaleString()}</span>
+        <span class="total">${parseInt(total).toLocaleString()}</span>
+        <div class="bar" style="width:${barPct}%"></div>
+      </div>`;
+  }
+
+  // ── portfolio rendering ──────────────────────────────────────────────────────
+  async function refreshPortfolio() {
+    try {
+      const res  = await fetch('/api/portfolio');
+      const data = await res.json();
+
+      document.getElementById('cash-val').textContent   = '$' + data.cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('shares-val').textContent = data.shares.toLocaleString();
+
+      const pnlEl = document.getElementById('pnl-val');
+      const pnl   = data.pnl;
+      pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      pnlEl.className   = 'stat-val ' + (pnl >= 0 ? 'positive' : 'negative');
+
+      renderTrades(data.trades);
+    } catch (_) {}
+  }
+
+  function renderTrades(trades) {
+    const list   = document.getElementById('trades-list');
+    const noEl   = document.getElementById('no-trades');
+
+    if (!trades.length) {
+      noEl.style.display  = 'block';
+      list.innerHTML = '';
+      return;
+    }
+    noEl.style.display = 'none';
+
+    list.innerHTML = [...trades].reverse().map(t => `
+      <div class="trade-row">
+        <span class="t-side ${t.side}">${t.side.toUpperCase()}</span>
+        <span class="t-detail">${t.qty} @ $${t.price.toFixed(2)}</span>
+        <span class="t-time">${t.timestamp}</span>
+      </div>`).join('');
+  }
+
+  // ── auto-refresh ─────────────────────────────────────────────────────────────
+  refreshBook();
+  refreshPortfolio();
+  setInterval(refreshBook, 2000);
+  setInterval(refreshPortfolio, 3000);
+</script>
+</body>
+</html>

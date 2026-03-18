@@ -1,0 +1,6 @@
+# compiled binaries
+orderbook
+orderbook_server
+
+# macOS
+.DS_Store
